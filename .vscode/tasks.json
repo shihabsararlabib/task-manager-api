@@ -1,0 +1,78 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Go: Run API",
+			"type": "shell",
+			"command": "go",
+			"args": [
+				"run",
+				"./cmd/server"
+			],
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "Go: Test",
+			"type": "shell",
+			"command": "go",
+			"args": [
+				"test",
+				"./..."
+			],
+			"group": "test",
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Task Manager API",
+			"type": "shell",
+			"command": "go",
+			"args": [
+				"run",
+				"./cmd/server"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Launch Task Manager API",
+			"type": "shell",
+			"command": "go",
+			"args": [
+				"run",
+				"./cmd/server"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Run Upgraded API",
+			"type": "shell",
+			"command": "go",
+			"args": [
+				"run",
+				"./cmd/server"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Frontend: Dev",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/frontend"
+			},
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
