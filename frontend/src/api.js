@@ -3,7 +3,7 @@ const envApiUrl = import.meta.env.VITE_API_URL
 
 function resolveApiUrl() {
   if (!envApiUrl) {
-    return `http://${DEFAULT_HOST}:8080`
+    return `http://${DEFAULT_HOST}:8081`
   }
 
   if (typeof window !== 'undefined') {

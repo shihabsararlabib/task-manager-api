@@ -1,20 +1,15 @@
-//go:build ignore
-// +build ignore
-
-package middleware
 package middleware
 
+import (
+	"log"
+	"net/http"
+	"time"
+)
 
-
-
-
-
-
-
-
-
-
-
-
-
-}	})		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))		next.ServeHTTP(w, r)		start := time.Now()	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {func Logging(next http.Handler) http.Handler {)	"time"	"net/http"	"log"import (
+func Logging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
+	})
+}
