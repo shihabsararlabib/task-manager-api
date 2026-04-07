@@ -17,7 +17,7 @@ function useSession() {
       if (value) localStorage.setItem('tm_session', JSON.stringify(value))
       else localStorage.removeItem('tm_session')
     } catch {
-      // ignore storage failures (e.g. embedded browser restrictions)
+      // ignore storage failures
     }
   }
 
@@ -46,7 +46,12 @@ function useSession() {
 
 export default function App() {
   const { session, save } = useSession()
-  const [mode, setMode] = useState('login')
+  const token = session?.accessToken
+  const user = session?.user ?? null
+
+  const [view, setView] = useState(token ? 'dashboard' : 'home')
+  const [authMode, setAuthMode] = useState('login')
+  
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' })
   const [taskForm, setTaskForm] = useState({ title: '', description: '' })
   const [tasks, setTasks] = useState([])
@@ -54,9 +59,6 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-
-  const token = session?.accessToken
-  const user = session?.user ?? null
 
   const taskQuery = useMemo(() => {
     const params = new URLSearchParams()
@@ -74,9 +76,8 @@ export default function App() {
   }, [tasks])
 
   useEffect(() => {
-    if (token) void loadTasks()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, taskQuery])
+    if (token && view === 'dashboard') void loadTasks()
+  }, [token, taskQuery, view])
 
   async function loadTasks() {
     if (!token) return
@@ -110,17 +111,18 @@ export default function App() {
     try {
       setLoading(true)
       const payload =
-        mode === 'register'
+        authMode === 'register'
           ? { name: authForm.name, email: authForm.email, password: authForm.password }
           : { email: authForm.email, password: authForm.password }
 
-      const data = mode === 'register' ? await api.register(payload) : await api.login(payload)
+      const data = authMode === 'register' ? await api.register(payload) : await api.login(payload)
       save({
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
         user: data.user
       })
       setAuthForm({ name: '', email: '', password: '' })
+      setView('dashboard')
     } catch (err) {
       setMessage(err.message)
     } finally {
@@ -138,8 +140,9 @@ export default function App() {
         refreshToken: data.refresh_token,
         user: data.user
       })
-      setMode('login')
+      setAuthMode('login')
       setAuthForm({ name: '', email: 'admin@example.com', password: 'Admin123!' })
+      setView('dashboard')
     } catch (err) {
       setMessage(err.message)
     } finally {
@@ -153,11 +156,12 @@ export default function App() {
         await api.logout(session.refreshToken)
       }
     } catch {
-      // ignore logout failure
+      // ignore
     }
     save(null)
     setTasks([])
     setUsers([])
+    setView('home')
   }
 
   async function createTask(e) {
@@ -203,208 +207,257 @@ export default function App() {
     }
   }
 
-  if (!session || !token || !user) {
-    return (
-      <div className="auth-shell">
-        <div className="container auth-layout">
-          <section className="card auth-card auth-panel">
-            <p className="eyebrow">Task Manager Pro</p>
-            <h2>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h2>
-            <p className="subtext">{mode === 'login' ? 'Sign in to continue to your workspace.' : 'Get started in a few seconds.'}</p>
-            <div className="tabs">
-              <button type="button" onClick={() => setMode('login')} className={mode === 'login' ? 'active' : ''}>Login</button>
-              <button type="button" onClick={() => setMode('register')} className={mode === 'register' ? 'active' : ''}>Register</button>
-            </div>
-            <form onSubmit={handleAuthSubmit} className="form">
-              {mode === 'register' && (
+  return (
+    <div className="layout-shell fade-in">
+      {/* Global Navigation */}
+      <nav className="global-nav">
+        <div className="nav-container">
+          <div className="nav-brand" onClick={() => setView('home')}>
+            <div className="brand-icon pulse"></div>
+            <span>TaskManager Pro</span>
+          </div>
+          <div className="nav-links">
+            <button className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={() => setView('home')}>Home</button>
+            <button className={`nav-item ${view === 'about' ? 'active' : ''}`} onClick={() => setView('about')}>About</button>
+          </div>
+          <div className="nav-actions">
+            {!token ? (
+              <button className="primary nav-btn" onClick={() => { setView('auth'); setAuthMode('login'); }}>Sign in</button>
+            ) : (
+              <>
+                <button className={`nav-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>Dashboard</button>
+                <button className="ghost nav-btn" onClick={handleLogout}>Logout</button>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* View Router Layer */}
+      <main className="main-content">
+        {view === 'home' && (
+          <div className="page-animate">
+            <section className="hero">
+              <div className="glow-orb"></div>
+              <p className="eyebrow fade-in-up" style={{animationDelay: '0.1s'}}>Organize better</p>
+              <h1 className="fade-in-up" style={{animationDelay: '0.2s'}}>Manage your team’s tasks<br/>in one secure workspace.</h1>
+              <p className="hero-subtext fade-in-up" style={{animationDelay: '0.3s'}}>
+                Track progress, assign priorities, and ship work faster with a fully API-driven premium platform.
+              </p>
+              <div className="hero-actions fade-in-up" style={{animationDelay: '0.4s'}}>
+                {!token ? (
+                  <button className="primary large glow-btn" onClick={() => { setView('auth'); setAuthMode('register'); }}>Get Started Free</button>
+                ) : (
+                  <button className="primary large glow-btn" onClick={() => setView('dashboard')}>Go to Dashboard</button>
+                )}
+                <button className="ghost large" onClick={() => setView('about')}>Learn more</button>
+              </div>
+            </section>
+            
+            <section className="container">
+              <div className="landing-head fade-in-up" style={{animationDelay: '0.5s'}}>
+                <h3>What you can do on this platform</h3>
+                <p className="subtext">All core features are elegantly animated and responsive.</p>
+              </div>
+              <div className="feature-grid">
+                <article className="card float-hover fade-in-up" style={{animationDelay: '0.6s'}}>
+                  <h4>Secure Authentication</h4>
+                  <p>Register, login, refresh, and logout flows using JWT access and refresh tokens.</p>
+                </article>
+                <article className="card float-hover fade-in-up" style={{animationDelay: '0.7s'}}>
+                  <h4>Task Board</h4>
+                  <p>Create, update, filter, and delete tasks with real-time status changes and polished UI.</p>
+                </article>
+                <article className="card float-hover fade-in-up" style={{animationDelay: '0.8s'}}>
+                  <h4>Admin Controls</h4>
+                  <p>Admin users can load and review registered users and roles directly from the control panel.</p>
+                </article>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {view === 'about' && (
+          <div className="page-animate container about-page">
+             <div className="card glass-card fade-in-up" style={{animationDelay: '0.1s'}}>
+                <h2>About TaskManager Pro</h2>
+                <p className="subtext">Task Manager Pro is an advanced digital workspace designed for high-performance teams to orchestrate their day-to-day operations seamlessly.</p>
+                
+                <h3 className="section-title">Our Architecture</h3>
+                <p>This project utilizes a modern decoupled footprint:</p>
+                <ul className="info-list">
+                  <li><strong>Frontend:</strong> React + Vite with raw CSS to ensure lightning-fast browser rendering and beautiful micro-animations avoiding third-party CSS constraints.</li>
+                  <li><strong>Backend:</strong> Golang RESTful API equipped with standard net/http and chi routing components for high throughput.</li>
+                  <li><strong>Database:</strong> Scalable PostgreSQL persistence layer.</li>
+                </ul>
+                
+                <h3 className="section-title">The Philosophy</h3>
+                <p>We designed this environment focusing entirely on User Experience (UX), application performance, and premium glassmorphism visuals. Enjoy unparalleled speed coupled with a tailored dark aesthetic ideal for long developer sessions.</p>
+             </div>
+          </div>
+        )}
+
+        {view === 'auth' && !token && (
+          <div className="page-animate container auth-layout fade-in-up">
+            <section className="card auth-card glass-card">
+              <p className="eyebrow">Task Manager Pro</p>
+              <h2>{authMode === 'login' ? 'Welcome back' : 'Create your account'}</h2>
+              <p className="subtext">{authMode === 'login' ? 'Sign in to continue to your workspace.' : 'Get started in a few seconds.'}</p>
+              <div className="tabs">
+                <button type="button" onClick={() => setAuthMode('login')} className={authMode === 'login' ? 'active' : ''}>Login</button>
+                <button type="button" onClick={() => setAuthMode('register')} className={authMode === 'register' ? 'active' : ''}>Register</button>
+              </div>
+              <form onSubmit={handleAuthSubmit} className="form">
+                {authMode === 'register' && (
+                  <input
+                    className="input-field"
+                    placeholder="Full name"
+                    value={authForm.name}
+                    onChange={(e) => setAuthForm((p) => ({ ...p, name: e.target.value }))}
+                    required
+                  />
+                )}
                 <input
-                  placeholder="Full name"
-                  value={authForm.name}
-                  onChange={(e) => setAuthForm((p) => ({ ...p, name: e.target.value }))}
+                  className="input-field"
+                  type="email"
+                  placeholder="Email address"
+                  value={authForm.email}
+                  onChange={(e) => setAuthForm((p) => ({ ...p, email: e.target.value }))}
                   required
                 />
-              )}
-              <input
-                type="email"
-                placeholder="Email address"
-                value={authForm.email}
-                onChange={(e) => setAuthForm((p) => ({ ...p, email: e.target.value }))}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={authForm.password}
-                onChange={(e) => setAuthForm((p) => ({ ...p, password: e.target.value }))}
-                required
-              />
-              <button className="primary" disabled={loading}>
-                {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
-              </button>
-              <button type="button" className="ghost" onClick={loginAsAdmin} disabled={loading}>
-                Use admin demo login
-              </button>
-            </form>
-            <p className="legal-note">By continuing, you agree to your workspace security policy.</p>
-            {message && <p className="error">{message}</p>}
-          </section>
-
-          <section className="hero card marketing-panel">
-            <p className="eyebrow">Organize better</p>
-            <h1>Manage your team’s tasks in one secure workspace.</h1>
-            <p>Track progress, assign priorities, and ship work faster with an API-driven task platform.</p>
-            <ul className="feature-list">
-              <li><span>✓</span>JWT authentication</li>
-              <li><span>✓</span>Admin user management</li>
-              <li><span>✓</span>Status-based task pipeline</li>
-            </ul>
-          </section>
-        </div>
-
-        <section className="landing-features card">
-          <div className="landing-head">
-            <h3>What you can do on this platform</h3>
-            <p className="subtext">All core features are already connected to the backend API.</p>
+                <input
+                  className="input-field"
+                  type="password"
+                  placeholder="Password"
+                  value={authForm.password}
+                  onChange={(e) => setAuthForm((p) => ({ ...p, password: e.target.value }))}
+                  required
+                />
+                <button className="primary submit-btn glow-btn" disabled={loading}>
+                  {loading ? <span className="spinner"></span> : authMode === 'login' ? 'Sign in' : 'Create account'}
+                </button>
+                <button type="button" className="ghost" onClick={loginAsAdmin} disabled={loading}>
+                  Use admin demo login
+                </button>
+              </form>
+              <p className="legal-note">By continuing, you agree to your workspace security policy.</p>
+              {message && <p className="error shake">{message}</p>}
+            </section>
           </div>
-          <div className="feature-grid">
-            <article>
-              <h4>Secure Authentication</h4>
-              <p>Register, login, refresh, and logout flows using JWT access and refresh tokens.</p>
-            </article>
-            <article>
-              <h4>Task Board</h4>
-              <p>Create, update, filter, and delete tasks with real-time status changes.</p>
-            </article>
-            <article>
-              <h4>Admin Controls</h4>
-              <p>Admin users can load and review registered users and roles.</p>
-            </article>
-            <article>
-              <h4>Production-ready API</h4>
-              <p>Role-based access, PostgreSQL persistence, and migration-backed schema.</p>
-            </article>
-          </div>
-          <div className="quickstart">
-            <strong>Quick start:</strong>
-            <span>Login with admin@example.com / Admin123!</span>
-          </div>
-        </section>
-      </div>
-    )
-  }
+        )}
 
-  return (
-    <div className="app-shell">
-      <div className="container">
-        <header className="header card">
-          <div>
-            <p className="eyebrow">Task Manager Pro</p>
-            <h1 className="title">Workspace Dashboard</h1>
-            <p className="subtext">Manage tasks with clarity and control.</p>
-          </div>
-
-          <div className="header-actions">
-            <div className="identity-chip">
-              <strong>{user?.name ?? 'User'}</strong>
-              <span>{user?.role ?? 'user'}</span>
-            </div>
-            <button type="button" onClick={handleLogout}>Logout</button>
-          </div>
-        </header>
-
-        <section className="metrics-grid">
-          <article className="metric card"><span>Total Tasks</span><strong>{metrics.total}</strong></article>
-          <article className="metric card"><span>Todo</span><strong>{metrics.todo}</strong></article>
-          <article className="metric card"><span>In Progress</span><strong>{metrics.inProgress}</strong></article>
-          <article className="metric card"><span>Done</span><strong>{metrics.done}</strong></article>
-        </section>
-
-        <div className="grid">
-          <section className="card">
-            <h2>Create Task</h2>
-            <p className="subtext">Add a new item to your workflow.</p>
-            <form onSubmit={createTask} className="form">
-              <input
-                placeholder="Task title"
-                value={taskForm.title}
-                onChange={(e) => setTaskForm((p) => ({ ...p, title: e.target.value }))}
-                required
-              />
-              <textarea
-                placeholder="Description (optional)"
-                value={taskForm.description}
-                onChange={(e) => setTaskForm((p) => ({ ...p, description: e.target.value }))}
-              />
-              <button className="primary" disabled={loading}>Create task</button>
-            </form>
-          </section>
-
-          <section className="card tasks-card">
-            <div className="tasks-head">
+        {view === 'dashboard' && token && user && (
+          <div className="page-animate container dashboard-layout">
+            <header className="dashboard-header fade-in-up" style={{animationDelay: '0.1s'}}>
               <div>
-                <h2>Task Board</h2>
-                <p className="subtext">Update status and keep momentum.</p>
+                <p className="eyebrow">Interactive Space</p>
+                <h1 className="title">Workspace Dashboard</h1>
+                <p className="subtext">Manage tasks with clarity and control.</p>
               </div>
-              <div className="row">
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                  <option value="">All statuses</option>
-                  {TASK_STATUS.map((s) => (
-                    <option key={s} value={s}>{formatStatus(s)}</option>
-                  ))}
-                </select>
-                <button type="button" onClick={loadTasks}>Refresh</button>
+              <div className="identity-chip">
+                <strong>{user.name}</strong>
+                <span className="role-chip">{user.role}</span>
               </div>
-            </div>
+            </header>
 
-            <ul className="list">
-              {tasks.map((task) => (
-                <li key={task.id}>
-                  <div className="task-content">
-                    <strong>{task.title}</strong>
-                    <p>{task.description || 'No description provided.'}</p>
-                    <span className={`status-badge ${task.status}`}>{formatStatus(task.status)}</span>
+            <section className="metrics-grid fade-in-up" style={{animationDelay: '0.2s'}}>
+              <article className="metric glass-card hover-glow"><span>Total Tasks</span><strong>{metrics.total}</strong></article>
+              <article className="metric glass-card hover-glow"><span>Todo</span><strong>{metrics.todo}</strong></article>
+              <article className="metric glass-card hover-glow"><span>In Progress</span><strong>{metrics.inProgress}</strong></article>
+              <article className="metric glass-card hover-glow"><span>Done</span><strong>{metrics.done}</strong></article>
+            </section>
+
+            <div className="grid">
+              <section className="glass-card panel-left fade-in-up" style={{animationDelay: '0.3s'}}>
+                <h2>Create Task</h2>
+                <p className="subtext">Add a new item to your workflow.</p>
+                <form onSubmit={createTask} className="form">
+                  <input
+                    className="input-field"
+                    placeholder="Task title"
+                    value={taskForm.title}
+                    onChange={(e) => setTaskForm((p) => ({ ...p, title: e.target.value }))}
+                    required
+                  />
+                  <textarea
+                    className="input-field textarea-field"
+                    placeholder="Description (optional)"
+                    value={taskForm.description}
+                    onChange={(e) => setTaskForm((p) => ({ ...p, description: e.target.value }))}
+                  />
+                  <button className="primary submit-btn glow-btn target-glow" disabled={loading}>
+                     {loading ? <span className="spinner"></span> : 'Create task'}
+                  </button>
+                </form>
+              </section>
+
+              <section className="glass-card tasks-card fade-in-up" style={{animationDelay: '0.4s'}}>
+                <div className="tasks-head">
+                  <div>
+                    <h2>Task Board</h2>
+                    <p className="subtext">Update status and keep momentum.</p>
                   </div>
                   <div className="row">
-                    <select value={task.status} onChange={(e) => updateStatus(task, e.target.value)}>
+                    <select className="dropdown-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                      <option value="">All statuses</option>
                       {TASK_STATUS.map((s) => (
                         <option key={s} value={s}>{formatStatus(s)}</option>
                       ))}
                     </select>
-                    <button type="button" onClick={() => removeTask(task.id)} className="danger">Delete</button>
+                    <button type="button" onClick={loadTasks}>Refresh</button>
                   </div>
-                </li>
-              ))}
-              {!tasks.length && <li className="empty">No tasks yet. Create your first task.</li>}
-            </ul>
-          </section>
-
-          {user?.role === 'admin' && (
-            <section className="card admin-card">
-              <div className="row between">
-                <div>
-                  <h2>Admin · Users</h2>
-                  <p className="subtext">Inspect registered users and roles.</p>
                 </div>
-                <button type="button" onClick={loadUsers}>Load users</button>
-              </div>
-              <ul className="list compact">
-                {users.map((u) => (
-                  <li key={u.id}>
-                    <div>
-                      <strong>{u.name}</strong>
-                      <p>{u.email}</p>
-                    </div>
-                    <span className="status-badge done">{u.role}</span>
-                  </li>
-                ))}
-                {!users.length && <li className="empty">No users loaded.</li>}
-              </ul>
-            </section>
-          )}
-        </div>
 
-        {message && <p className="error">{message}</p>}
-      </div>
+                <ul className="list">
+                  {tasks.map((task, idx) => (
+                    <li key={task.id} className="task-item scale-in" style={{animationDelay: `${0.05 * idx}s`}}>
+                      <div className="task-content">
+                        <strong>{task.title}</strong>
+                        <p>{task.description || 'No description provided.'}</p>
+                        <span className={`status-badge ${task.status}`}>{formatStatus(task.status)}</span>
+                      </div>
+                      <div className="row">
+                        <select className="dropdown-select" value={task.status} onChange={(e) => updateStatus(task, e.target.value)}>
+                          {TASK_STATUS.map((s) => (
+                            <option key={s} value={s}>{formatStatus(s)}</option>
+                          ))}
+                        </select>
+                        <button type="button" onClick={() => removeTask(task.id)} className="danger">Delete</button>
+                      </div>
+                    </li>
+                  ))}
+                  {!tasks.length && <li className="empty fade-in">No tasks yet. Create your first task.</li>}
+                </ul>
+              </section>
+
+              {user?.role === 'admin' && (
+                <section className="glass-card admin-card fade-in-up" style={{animationDelay: '0.5s', gridColumn: '1 / -1'}}>
+                  <div className="row between">
+                    <div>
+                      <h2>Admin · Users</h2>
+                      <p className="subtext">Inspect registered users and roles.</p>
+                    </div>
+                    <button type="button" onClick={loadUsers}>Load users</button>
+                  </div>
+                  <ul className="list compact">
+                    {users.map((u, idx) => (
+                      <li key={u.id} className="user-item scale-in" style={{animationDelay: `${0.05 * idx}s`}}>
+                        <div>
+                          <strong>{u.name}</strong>
+                          <p>{u.email}</p>
+                        </div>
+                        <span className="status-badge done">{u.role}</span>
+                      </li>
+                    ))}
+                    {!users.length && <li className="empty">No users loaded.</li>}
+                  </ul>
+                </section>
+              )}
+            </div>
+            {message && <p className="error shake" style={{marginTop: '24px'}}>{message}</p>}
+          </div>
+        )}
+      </main>
     </div>
   )
 }
