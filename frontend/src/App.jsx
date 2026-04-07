@@ -368,7 +368,7 @@ export default function App() {
             </section>
 
             <div className="grid">
-              <section className="glass-card panel-left fade-in-up" style={{animationDelay: '0.3s'}}>
+              <section className="card glass-card panel-left fade-in-up" style={{animationDelay: '0.3s'}}>
                 <h2>Create Task</h2>
                 <p className="subtext">Add a new item to your workflow.</p>
                 <form onSubmit={createTask} className="form">
@@ -391,7 +391,7 @@ export default function App() {
                 </form>
               </section>
 
-              <section className="glass-card tasks-card fade-in-up" style={{animationDelay: '0.4s'}}>
+              <section className="card glass-card tasks-card fade-in-up" style={{animationDelay: '0.4s'}}>
                 <div className="tasks-head">
                   <div>
                     <h2>Task Board</h2>
@@ -431,7 +431,7 @@ export default function App() {
               </section>
 
               {user?.role === 'admin' && (
-                <section className="glass-card admin-card fade-in-up" style={{animationDelay: '0.5s', gridColumn: '1 / -1'}}>
+                <section className="card glass-card admin-card fade-in-up" style={{animationDelay: '0.5s', gridColumn: '1 / -1'}}>
                   <div className="row between">
                     <div>
                       <h2>Admin · Users</h2>

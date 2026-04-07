@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
+  color-scheme: dark;
   font-family: 'Inter', system-ui, -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, helvetica, arial, sans-serif;
   color: #ededed;
   background-color: #050505;
@@ -197,6 +198,7 @@ body {
   line-height: 1.1;
   background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 24px;
 }
@@ -271,6 +273,8 @@ p {
 .glass-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 32px;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
@@ -312,9 +316,24 @@ button {
   border: 1px solid var(--border-light);
   background: var(--bg-tertiary);
   color: var(--text-primary);
-  padding: 12px 16px;
+  padding: 16px 20px;
   font-size: 14px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+select {
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23ededed" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 20px;
+  padding-right: 48px;
+  cursor: pointer;
+}
+
+select option {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 input::placeholder,
@@ -535,7 +554,7 @@ button.danger:hover {
 
 .row {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
 }
 
@@ -624,6 +643,10 @@ button.danger:hover {
   gap: 16px;
   align-items: flex-start;
   flex-wrap: wrap;
+}
+
+.tasks-head .row {
+  gap: 28px;
 }
 
 .status-badge {
